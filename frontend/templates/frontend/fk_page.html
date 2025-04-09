@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  {% load static %}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FK Insights Dashboard</title>
+  <link rel="stylesheet" href="{% static '/frontend/css/fk_page.css' %}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" />
+
+  <!-- for date picker -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</head>
+
+<body>
+  <div class="container mt-5">
+    
+    <div class="logo-container">
+      <img src="{% static 'frontend/images/Nexten_Logo.png' %}" alt="NexTen Brands Logo" class="logo">
+    </div>
+    <h1 class="text-center mb-4">Flipkart Sales Insights</h1>
+
+    <!-- Logout button -->
+    <a href="/backend/logout/" class="btn btn-danger float-end">Logout</a>
+
+    <!-- For Sub-Brand Slicer -->
+    <div class="slicer float-end" style="margin-bottom: 10px; margin-right: 10px; width: 10%; font-size: 1rem;">
+      <select id="brand-slicer" class="form-select mx-auto">
+        <option value="">Brand</option>
+      </select>
+    </div>
+
+    <!-- For Brand Slicer -->
+    <div class="slicer float-end" style="margin-bottom: 10px; margin-right: 10px; width: 10%; font-size: 1rem;">
+      <select id="seller-slicer" class="form-select mx-auto">
+        <option value="">Seller</option>
+        <option value="TRI">TRI</option>
+        <option value="Amour Hygiene">Amour Hygiene</option>
+        <option value="NexTen Brands">NexTen Brands</option>
+        <option value="All Seller">All Seller</option>
+      </select>
+    </div>
+
+    <!-- Date range selection section (Start and End Dates in a row) -->
+    <div class="row mb-3">
+      <!-- For selecting start date -->
+      <div class="col-md-2">
+        <label for="start-date" class="form-label">Start Date</label>
+        <input type="date" id="start-date" class="form-control" />
+      </div>
+      <!-- For selecting end date -->
+      <div class="col-md-2">
+        <label for="end-date" class="form-label">End Date</label>
+        <input type="date" id="end-date" class="form-control" />
+      </div>
+
+
+      <!-- Pre-defined Date Selector -->
+      <div class="col-md-2 d-flex align-items-end">
+        <select id="date-range-selector" class="form-select" onchange="updateDateRangeAndFetch()">
+          <option value="">Pre-defined Dates</option>
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="last7days">Last 7 Days</option>
+          <option value="last15days">Last 15 Days</option>
+          <option value="last30days">Last 30 Days</option>
+          <option value="last90days">Last 90 Days</option>
+        </select>
+      </div>
+      <!-- Get Insights button to fetch the updated data -->
+      <div class="col-md-2 d-flex align-items-end">
+        <button id="fetch-insights" class="btn btn-primary">Get Insights</button>
+      </div>
+    </div>
+
+
+    <!-- Container for displaying insights as cards -->
+    <div id="insights-cards" class="row g-3">
+      <!-- Cards will be dynamically generated here -->
+    </div>
+    <br>
+    <!-- Plot of different metrices -->
+    <h3 class="header-title">Trends</h3>
+
+    <div class="plot-container">
+
+      <div class="dropdown" style="margin-bottom: 20px;">
+        <button class="btn dropdown-toggle" type="button" id="multiSelectDropdown" data-bs-toggle="dropdown"
+          aria-expanded="false"
+          style="background-color: #d61525; color: #ffffff; border: none; padding: 10px 20px; border-radius: 8px;">
+          <b>Select Graph</b>
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="multiSelectDropdown" style="padding: 10px;">
+          <li>
+            <label>
+              <input type="checkbox" value="gmv" checked> Gross Revenue
+            </label>
+          </li>
+          <li>
+            <label>
+              <input type="checkbox" value="qty"> Gross Units
+            </label>
+          </li>
+          <li>
+            <label>
+              <input type="checkbox" value="views"> Views
+            </label>
+          </li>
+          <li>
+            <label>
+              <input type="checkbox" value="adsSpend"> Ads Spend
+            </label>
+          </li>
+          <li>
+            <label>
+              <input type="checkbox" value="roi"> ROI
+            </label>
+          </li>
+        </ul>
+      </div>
+      <div id="plot-container"></div>
+
+    </div>
+
+    <div class="plot1-container" style="margin-top: 15px;">
+      <div style="display: flex; width: 100%; height: vh; gap: 10px;">
+        <!-- First plot -->
+        <div id="demographic-plot" style="flex: 1;  width: 100%; height: 70%; border: 1px solid #000000;"></div>
+        <!-- Second plot (moved slightly to the right) -->
+        <div id="pie-chart-plot"
+          style="flex: 1;  width: 100%; height: 70%; border: 1px solid #000000; margin-left: 80px;"></div>
+      </div>
+    </div>
+
+
+
+    <br>
+    <!-- Details of product returned -->
+    <h3 class="text-center header-title">Product Details</h3>
+    <!-- <h3 class="text-center header-title">Return Details</h3> -->
+
+    <div class="return-search-bar container mt-4" style="width: 90%; border-radius: 10px;">
+      <!-- Search Input -->
+      <div style="display: flex; width: 100%; gap: 10px;">
+        <input type="text" class="return-search-bar" id="return-search-input"
+          placeholder="Search for product Title / Verticle..."
+          onkeyup="searchTable('return-consolidated-data-table', 'return-search-input')" style="
+              margin-bottom: 10px;
+              width: 100%;
+              padding: 2px;
+              font-size: 1rem;
+              border-radius: 20px;
+              text-align: center;
+            " />
+
+        <!-- Product and Vertical level slicer or filter for return tables -->
+        <div class="slicer" style="margin-bottom: 10px; width: 20%; font-size: 1rem;">
+          <select id="return-category-slicer" class="form-select mx-auto" onchange="applyReturnFilter()">
+            <option value="return_product">Product level</option>
+            <option value="return_vertical">Vertical level</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div id="table-container">
+      <table id="return-consolidated-data-table">
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Title</th>
+            <th onclick="sortTable(2, 'gmv', 'return-consolidated-data-table')">Gross Revenue <span
+                class="sort-icons"><span id="gmv-up">⇧</span><span id="gmv-down">⇩</span></span></th>
+            <th onclick="sortTable(3, 'qty', 'return-consolidated-data-table')">Gross Units <span
+                class="sort-icons"><span id="qty-up">⇧</span><span id="qty-down">⇩</span></span></th>
+            <th onclick="sortTable(4, 'returned_amt', 'return-consolidated-data-table')">Returned Amount <span
+                class="sort-icons"><span id="returned_amt-up">⇧</span><span id="return_amt-down">⇩</span></span></th>
+            <th onclick="sortTable(5, 'returned_qty', 'return-consolidated-data-table')">Returned Units <span
+                class="sort-icons"><span id="returned_qty-up">⇧</span><span id="returned_qty-down">⇩</span></span>
+            </th>
+            <th onclick="sortTable(6, 'cancelled_amt', 'return-consolidated-data-table')">Cancelled Amount <span
+                class="sort-icons"><span id="cancelled_amt-up">⇧</span><span id="cancelled_amt-down">⇩</span></span>
+            </th>
+            <th onclick="sortTable(7, 'cancelled_qty', 'return-consolidated-data-table')">Cancelled Units <span
+                class="sort-icons"><span id="returned_qty-up">⇧</span><span id="returned_qty-down">⇩</span></span>
+            <th onclick="sortTable(8, 'net_gmv', 'return-consolidated-data-table')">Net Revenue <span
+                class="sort-icons"><span id="net_gmv-up">⇧</span><span id="net_gmv-down">⇩</span></span>
+            <th onclick="sortTable(9, 'net_qty', 'return-consolidated-data-table')">Net Units <span
+                class="sort-icons"><span id="net_qty-up">⇧</span><span id="net_qty-down">⇩</span></span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Table rows will be generated dynamically -->
+        </tbody>
+      </table>
+    </div>
+
+    <br>
+
+    <!-- download the product table -->
+    <button id="download-table" class="btn btn-primary" style="background-color: #d61525; color: #ffffff">Download
+      Table</button>
+
+    <br>
+
+
+    <!-- PnL Table Controls -->
+    <div style="display: flex; justify-content: space-between; margin: 20px;">
+      <div>
+        <label for="pnl-time-slicer">Select Time Format:</label>
+        <select id="pnl-time-slicer" class="form-select">
+          <option value="day">Day-on-Day</option>
+          <option value="week">Week-on-Week</option>
+          <option value="month">Month-on-Month</option>
+          <option value="overall">Overall</option>
+        </select>
+      </div>
+
+      <!-- Button to open custom parameters popup -->
+      <div style="margin: 25.5px;">
+        <button id="open-custom-param-popup" class="btn btn-secondary" style="margin-left: -80%;">Add Custom
+          Parameters</button>
+      </div>
+
+      <!-- The Modal Popup for Custom Parameters -->
+      <div id="custom-param-modal"
+        style="display:none; position:fixed; top:20%; left:50%; transform:translate(-50%,0); background:white; padding:20px; border:1px solid #ccc; z-index:1000; max-width:600px; width:90%;">
+        <h4>Custom Parameters</h4>
+        <table id="custom-param-table" class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Parameter Name</th>
+              <th>Value</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Rows will be dynamically added here -->
+          </tbody>
+        </table>
+        <button id="add-custom-param-row" class="btn btn-secondary"
+          style="background-color: black; color: white; border-color: black;">Add Row</button>
+        <button id="save-custom-params" class="btn btn-primary"
+          style="background-color: grey; color: white; border-color: grey;">Save Parameters</button>
+        <button id="close-custom-param-modal" class="btn btn-danger">Close</button>
+      </div>
+
+      <div>
+        <label>Start Date:</label>
+        <input type="date" id="pnl-start-date" style="border-radius: 5px;">
+        <label>End Date:</label>
+        <input type="date" id="pnl-end-date" style="border-radius: 5px;">
+        <button id="pnl-fetch-data" class="btn btn-primary" style="background-color: #d61525; color: #ffffff">Fetch
+          Data</button>
+      </div>
+    </div>
+
+    <p><b>Note:</b> While adding the Custom Parameters, if it's a cost then add it with a <b>Negative sign</b> 
+      and if it's an input (asset) add it as a positive number.
+    </p>
+
+    <!-- Container for the PnL Table -->
+    <div id="container"
+      style="width: 100%; display: flex; overflow-y: auto; max-height: 500px; position: relative; text-align: center; border-radius: 10px; border: 1px solid #ccc;">
+      <table class="table table-striped" id="insights-table" style="width: 100%; border-collapse: collapse;">
+        <thead style="position: sticky; top: 0; z-index: 1; box-shadow: 0px 2px 5px rgba(0,0,0,0.1);">
+          <tr id="table-header">
+            <th>PnL Parameters</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <!-- Rows will be dynamically inserted here -->
+        </tbody>
+      </table>
+    </div>
+
+
+
+
+    <button onclick="downloadTableAsCSV()"
+      style="margin-top: 10px; padding: 8px 12px; border-radius: 5px; border: none; background-color: #d61525; color: #ffffff; cursor: pointer;">
+      Download Table
+    </button>
+
+
+  </div>
+
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+  <script src="{% static 'frontend/js/fk_page.js' %}"></script>
+  <!-- For date picker -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+  <!-- Inline JavaScript to Initialize Flatpickr -->
+  <script>
+
+    flatpickr("#current-date-range", {
+      mode: "range",
+      dateFormat: "Y-m-d",
+    });
+
+    flatpickr("#previous-date-range", {
+      mode: "range",
+      dateFormat: "Y-m-d",
+    });
+
+  </script>
+
+
+
+</body>
+
+</html>

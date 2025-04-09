@@ -1,0 +1,339 @@
+/* Center the table on the screen */
+.mt-4 {
+  max-height: 500px;
+  overflow-y: auto;
+  margin: 10px auto;
+  width: 90%;
+}
+
+#consolidated-data-table th {
+  background-color: #eeff00;
+  font-weight: bold;
+}
+
+.header-title {
+  margin-top: 15px;
+  text-align: center;
+}
+
+
+/* Overall Container & Page Styles */
+body {
+  background: linear-gradient(to right, #000000, #000000);
+  font-family: Arial, sans-serif;
+  color: #000000;
+}
+
+.container {
+  background: rgb(211, 211, 211);
+  padding: 2rem;
+  border-radius: 14px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Header */
+h1 {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #000000;
+  background: -webkit-linear-gradient(45deg, #000000, #000000);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+/* Date Range Selection Section */
+.form-label {
+  font-weight: bold;
+  color: #000000;
+}
+
+.form-control {
+  border: 2px solid #66b3ff;
+  border-radius: 8px;
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.form-control:focus {
+  box-shadow: 0 0 8px rgba(102, 179, 255, 0.6);
+}
+
+#fetch-insights {
+  background-color: #e6212d;
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+  border-radius: 8px;
+  transition: background-color 0.3s;
+  border-color: #000000;
+}
+
+#fetch-insights:hover {
+  background-color: #aad1f9;
+}
+
+/* Insight Cards */
+.card {
+  color: #809fbe8f;
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  padding: 5px;
+  text-align: center;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+  background-color: #82b9f4;
+}
+
+.card-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #000000;
+}
+
+.card-text {
+  font-size: 1.5rem;
+  color: #080808;
+}
+
+
+#current-date-range,
+#previous-date-range {
+  font-size: 12px;
+  /* Smaller font size */
+  padding: 4px;
+  /* Reduced padding */
+  height: auto;
+  /* Adjust height to fit smaller size */
+  width: 100%;
+  /* Make it fit nicely in the column */
+}
+
+.hidden {
+  display: none;
+}
+
+/* sticky header for product table */
+#table-container {
+  width: 100%;
+  max-height: 600px;
+  /* Maximum height for scrolling */
+  overflow-y: auto;
+  /* Enable vertical scrolling */
+  border-radius: 12px;
+  /* Rounded corners for container */
+  border: 1px solid #000000;
+  /* Border for container */
+  background-color: #ffffff ;display: block;
+  
+}
+
+#return-consolidated-data-table {
+  width: 100%;
+  /* Full width of the table */
+  border-collapse: collapse;
+  /* Ensure clean table layout */
+}
+
+#return-consolidated-data-table thead {
+  position: sticky;
+  /* Makes the header sticky */
+  top: 0;
+  /* Sticks the header at the top of the container */
+  background-color: #d61525;
+  /* Background color for the header */
+  z-index: 1;
+  /* Ensures the header stays on top of scrolling rows */
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  /* Adds shadow for better visibility */
+  color: #ffffff;
+  
+}
+
+#return-consolidated-data-table th,
+#return-consolidated-data-table td {
+  padding: 10px;
+  /* Padding for table cells */
+  border: 1px solid #000000;
+  /* Border for cells */
+  text-align: center;
+  /* Align text to the left */
+
+}
+
+#return-consolidated-data-table th {
+  font-weight: bold;
+  /* Bold font for header cells */
+  text-align: center;
+  /* Center-align header text */
+}
+
+#return-consolidated-data-table tr:hover {
+  background-color: #4ea6ed;
+}
+
+/* freeze the headers of the pnl */
+#container {
+  width: 100%;
+  max-height: 500px;
+  /* Maximum height for scrolling */
+  overflow-y: auto;
+  /* Enable vertical scrolling */
+  overflow-x: auto;
+  /* Enable vertical scrolling */
+  border-radius: 12px;
+  /* Rounded corners */
+  border: 1px solid #000000;
+  /* Add a border for better visibility */
+  background-color: rgb(255, 255, 255);
+}
+
+#insights-table {
+  width: 100%;
+  /* Ensure the table spans the container width */
+  border-collapse: collapse;
+  /* Make the table layout clean */
+}
+
+#insights-table thead {
+  position: sticky;
+  /* Makes the header sticky */
+  top: 0;
+  /* Sticks the header to the top of the container */
+  left: 0;
+  /* Sticks the header to the top of the container */
+  background-color: #d61525;
+  /* Background color for the header */
+  z-index: 2;
+  /* Ensures the header stays above table rows */
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  /* Adds a shadow for better separation */
+  color: #ffffff;
+}
+
+#insights-table th,
+#insights-table td {
+  padding: 10px;
+  /* Padding inside cells */
+  border: 1px solid #ddd;
+  /* Border for cells */
+  text-align: center;
+  /* Center-align content */
+  color: #000000;
+}
+
+#insights-table th {
+  font-weight: bold;
+  /* Bold font for header cells */
+  text-align: center;
+  /* Center-align header text */
+  color: #ffffff;
+}
+
+#insights-table tr:hover {
+  background-color: #4ea6ed;
+}
+
+/* Ensure the container allows scrolling, freze the 1st column */
+#container {
+  overflow-x: auto;
+  /* Enables horizontal scrolling */
+  max-height: 500px;
+  /* Sets max height */
+  position: relative;
+  text-align: center;
+  border-radius: 12px;
+  /* Rounded corners for container */
+  border: 1px solid #000000;
+
+
+}
+
+/* Sticky First Column */
+#insights-table th:first-child,
+#insights-table td:first-child {
+  /* position: sticky;
+  left: 0;
+  z-index: 0;
+  
+  border-right: 1px solid #ccc;
+ 
+  background-color: #ffffff(211, 211, 211); 
+  color: #000000; */
+}
+
+#insights-table thead {
+  background-color: #d61525;
+  color: #ffffff;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  /* Adds shadow for better visibility */
+}
+
+
+#insights-table tr:hover {
+  background-color: #4ea6ed;
+}
+
+
+/* Ensure dropdown items are spaced properly for graph */
+.dropdown-menu li {
+  padding: 5px 10px;
+}
+
+/* Increase spacing between checkboxes */
+.dropdown-menu input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+/* Set a maximum height to prevent long lists from overflowing */
+.dropdown-menu {
+  max-height: 200px;
+  overflow-y: auto;
+  /* Enables scrolling if too many items */
+}
+
+/* Improve graph container appearance */
+#plot-container {
+  width: 100%;
+  min-height: 500px;
+  /* Ensure it has some height even when empty */
+  border: 1px solid #000000;
+  /* Light border for visibility */
+  padding: 10px;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+/* LOGO */
+.logo-container {
+  position: absolute;
+  top: 30px; 
+  left: 100px; 
+
+}
+
+.logo {
+  height: 150px; 
+  width: auto; 
+}
+
+
+.btn {
+  background-color: #d61525;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
