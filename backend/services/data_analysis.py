@@ -266,7 +266,7 @@ def Flipkart_sales_parameters(sales_data_model, return_data_model, start_date=No
 
 
 
-        # print(f"Start date {start_date_i} and end date: {end_date_i}")
+        print(f"Start date {start_date_i} and end date: {end_date_i}")
 
         sales_order_item_ids = sales_data_model.objects.filter(
             event_sub_type="Sale",
@@ -274,7 +274,7 @@ def Flipkart_sales_parameters(sales_data_model, return_data_model, start_date=No
         ).values_list('order_item_id', flat=True).distinct()
 
 
-        # print(f"length of unique sales order item id: {len(sales_order_item_ids)}")
+        print(f"length of unique sales order item id: {len(sales_order_item_ids)}")
 
         return_order_item_ids = sales_data_model.objects.filter(
             order_item_id__in=sales_order_item_ids,
@@ -283,7 +283,7 @@ def Flipkart_sales_parameters(sales_data_model, return_data_model, start_date=No
         ).values_list('order_item_id', flat=True).distinct()
 
 
-        # print(f"length of unique return order item id: {len(return_order_item_ids)}")
+        print(f"length of unique return order item id: {len(return_order_item_ids)}")
 
         # print(f"The no. of Return Order Item IDs: {len(return_order_item_ids)}")
 
@@ -342,13 +342,13 @@ def Flipkart_sales_parameters(sales_data_model, return_data_model, start_date=No
         # Get each total; if missing, default to 0.
         courier_return = return_totals.get('courier_return', 0)
         customer_return = return_totals.get('customer_return', 0)
-        miscellaneous_return = return_totals.get('miscellaneous returns', 0)   
+        miscellaneous_return = return_totals.get('miscellaneous returns', 0) 
 
         # print(f"Actual return qty: {display_return_qty}")
-        # print(f"start_date {start_date_i} and end_date {end_date_i}")
-        # print(f"courier return: {courier_return}")
-        # print(f"customer return: {customer_return}")
-        # print(f"miscellaneous return: {miscellaneous_return}")
+        print(f"start_date {start_date_i} and end_date {end_date_i}")
+        print(f"courier return: {courier_return}")
+        print(f"customer return: {customer_return}")
+        print(f"miscellaneous return: {miscellaneous_return}")
 
         display_cancellation_qty = sales_data_model.objects.filter(order_item_id__in=cancellation_ids, order_date__range=[start_date, extended_date], event_sub_type="Cancellation").aggregate(cancellation_qty=Sum(F('item_quantity')))['cancellation_qty'] or 0
         display_cancellation_rev = sales_data_model.objects.filter(order_item_id__in=cancellation_ids, order_date__range=[start_date, extended_date], event_sub_type="Cancellation").aggregate(cancellation_rev=Sum(F('final_invoice_amount')))['cancellation_rev'] or 0

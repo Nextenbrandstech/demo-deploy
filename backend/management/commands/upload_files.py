@@ -57,8 +57,8 @@ class Command(BaseCommand):
 
         # # specifying the path to the excel file
         
-        file_path_cogs_vertical_1st_step = r"C:\Users\Satyam\Documents\Excel files\1st step\COGS TRI.xlsx"
-        file_path_1st_step_master_sku = r"C:\Users\Satyam\Documents\Excel files\1st step\First_step_master_sku.xlsx"
+        # file_path_cogs_vertical_1st_step = r"C:\Users\Satyam\Documents\Excel files\1st step\COGS TRI.xlsx"
+        # file_path_1st_step_master_sku = r"C:\Users\Satyam\Documents\Excel files\1st step\First_step_master_sku.xlsx"
 
 
         # # load the cogs file in the database of First Step
@@ -69,9 +69,9 @@ class Command(BaseCommand):
         # load_First_step_Master_SKU(file_path_1st_step_master_sku, First_step_Master_SKU)
         # self.stdout.write(self.style.SUCCESS('Master SKU of 1st Step is uploaded successfully!'))
         
-        # # uploading the Sales data to the Sales database of First Step FK
-        # First_Step_sales_folder_path = r"C:\Users\Satyam\Documents\Excel files\1st step\sales"
-        # upload_files_to_database(First_Step_sales_folder_path, UploadedFileTracker, load_sales_FK, First_step_SalesData_FK)
+        # uploading the Sales data to the Sales database of First Step FK
+        First_Step_sales_folder_path = r"C:\Users\Satyam\Documents\Excel files\1st step\sales"
+        upload_files_to_database(First_Step_sales_folder_path, UploadedFileTracker, load_sales_FK, First_step_SalesData_FK)
         
         # # uploading the Ads data to the Ads database of First Step FK
         # First_Step_ads_folder_path = r"C:\Users\Satyam\Documents\Excel files\1st step\ads"
@@ -108,8 +108,8 @@ class Command(BaseCommand):
         # First_step_SD_Ads_AMZ_folder_path = r"C:\Users\Satyam\Documents\Excel files\1st step\amazon\ads\SD"
         # upload_files_to_database(First_step_SD_Ads_AMZ_folder_path, UploadedFileTracker, load_SD_Ads_AMZ, First_step_SD_Ads_AMZ)
 
-        First_step_Return_AMZ_folder_path = r"C:\Users\Satyam\Documents\Excel files\1st step\amazon\return"
-        upload_files_to_database(First_step_Return_AMZ_folder_path, UploadedFileTracker, load_Return_AMZ, First_step_ReturnData_AMZ)
+        # First_step_Return_AMZ_folder_path = r"C:\Users\Satyam\Documents\Excel files\1st step\amazon\return"
+        # upload_files_to_database(First_step_Return_AMZ_folder_path, UploadedFileTracker, load_Return_AMZ, First_step_ReturnData_AMZ)
 
 
         # For Deleting the entire database
