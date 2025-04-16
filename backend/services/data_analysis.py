@@ -266,7 +266,7 @@ def Flipkart_sales_parameters(sales_data_model, return_data_model, start_date=No
 
 
 
-        print(f"Start date {start_date_i} and end date: {end_date_i}")
+        # print(f"Start date {start_date_i} and end date: {end_date_i}")
 
         sales_order_item_ids = sales_data_model.objects.filter(
             event_sub_type="Sale",
@@ -274,7 +274,7 @@ def Flipkart_sales_parameters(sales_data_model, return_data_model, start_date=No
         ).values_list('order_item_id', flat=True).distinct()
 
 
-        print(f"length of unique sales order item id: {len(sales_order_item_ids)}")
+        # print(f"length of unique sales order item id: {len(sales_order_item_ids)}")
 
         return_order_item_ids = sales_data_model.objects.filter(
             order_item_id__in=sales_order_item_ids,
@@ -283,7 +283,7 @@ def Flipkart_sales_parameters(sales_data_model, return_data_model, start_date=No
         ).values_list('order_item_id', flat=True).distinct()
 
 
-        print(f"length of unique return order item id: {len(return_order_item_ids)}")
+        # print(f"length of unique return order item id: {len(return_order_item_ids)}")
 
         # print(f"The no. of Return Order Item IDs: {len(return_order_item_ids)}")
 
@@ -342,13 +342,13 @@ def Flipkart_sales_parameters(sales_data_model, return_data_model, start_date=No
         # Get each total; if missing, default to 0.
         courier_return = return_totals.get('courier_return', 0)
         customer_return = return_totals.get('customer_return', 0)
-        miscellaneous_return = return_totals.get('miscellaneous returns', 0) 
+        miscellaneous_return = return_totals.get('miscellaneous returns', 0)   
 
         # print(f"Actual return qty: {display_return_qty}")
-        print(f"start_date {start_date_i} and end_date {end_date_i}")
-        print(f"courier return: {courier_return}")
-        print(f"customer return: {customer_return}")
-        print(f"miscellaneous return: {miscellaneous_return}")
+        # print(f"start_date {start_date_i} and end_date {end_date_i}")
+        # print(f"courier return: {courier_return}")
+        # print(f"customer return: {customer_return}")
+        # print(f"miscellaneous return: {miscellaneous_return}")
 
         display_cancellation_qty = sales_data_model.objects.filter(order_item_id__in=cancellation_ids, order_date__range=[start_date, extended_date], event_sub_type="Cancellation").aggregate(cancellation_qty=Sum(F('item_quantity')))['cancellation_qty'] or 0
         display_cancellation_rev = sales_data_model.objects.filter(order_item_id__in=cancellation_ids, order_date__range=[start_date, extended_date], event_sub_type="Cancellation").aggregate(cancellation_rev=Sum(F('final_invoice_amount')))['cancellation_rev'] or 0
@@ -2270,12 +2270,10 @@ def all_brand_Flipkart(start_date, end_date):
 
     # Iterate over multiple brands dynamically
     for values in zip(*insights_list):
-        print(f"Values of the loop: {values}")
 
         keys = [v[0] for v in values]  # Extract keys (they should be identical across brands)
-        print(f"Keys: {keys}")
+        
         values = [v[1] for v in values]  # Extract values
-        print(f"Values: {values}")
         
         key = keys[0]  # Any key from the extracted list
         
@@ -2396,6 +2394,59 @@ def all_brand_Flipkart(start_date, end_date):
                     final_dict[percent_change_key] = overall_percent_change
 
 
+        elif any(substring in key for substring in ('rto_percent', 'rtv_percent', 'misc_return_percent')):
+
+            rto_qty = [
+                Decimal(insights_dict[brand]['display_rto_return'])
+                for brand in amazon_brand_models.keys()
+            ]
+
+            total_rto_qty = sum(rto_qty)
+                
+            display_qty = [
+                Decimal(insights_dict[brand]['display_gross_units'])
+                for brand in amazon_brand_models.keys()
+            ]
+
+            total_display_qty = sum(display_qty)
+
+            misc_qty = [
+                Decimal(insights_dict[brand]['display_misc_return'])
+                for brand in amazon_brand_models.keys()
+            ]
+
+            total_misc_qty = sum(misc_qty)
+
+            rtv_qty = [
+                Decimal(insights_dict[brand]['display_rtv_return'])
+                for brand in amazon_brand_models.keys()
+            ]
+
+            total_rtv_qty = sum(rtv_qty)
+
+            cancellation_qty = [
+                Decimal(insights_dict[brand]['display_cancellation_units'])
+                for brand in amazon_brand_models.keys()
+            ]
+
+            total_cancellation_qty = sum(cancellation_qty)
+            
+            if 'rto_percent' in key:
+                
+                overall_rto_percent = total_rto_qty * 100 / (total_display_qty - total_misc_qty)
+                final_dict["display_rto_percent"] = round(overall_rto_percent, 2)
+        
+            elif 'rtv_percent' in key:
+
+                overall_rtv_percent = total_rtv_qty * 100 / (total_display_qty - total_cancellation_qty - total_rto_qty)
+                final_dict['display_rtv_percent'] = round(overall_rtv_percent, 2)
+            
+            elif 'misc_return_percent' in key:
+
+                overall_misc_return_percent = total_misc_qty * 100 / total_display_qty
+                final_dict['display_misc_return_percent'] = round(overall_misc_return_percent, 2)
+
+
         elif 'percent_' in key:
             # Calculate previous values dynamically
             current_key = 'display_' + key.split('percent_change_')[1]
@@ -2413,24 +2464,7 @@ def all_brand_Flipkart(start_date, end_date):
             )
 
             final_dict[key] = float(overall_percent_change)  # Convert back to float for output
-        
-        elif any(substring in key for substring in ('rto', 'rtv', 'miscellaneous_returns')):
-            
-            # Aggregating return metrics is sum of either 'rto', 'rtv', or 'miscellaneous_returns'
-            # Don't get confused by total returns
-            
-            aggregated_returns = [
-                Decimal(insights_dict[brand]['display_gross_units'])*Decimal(insights_dict[brand][key])/Decimal(100)
-                for brand in brand_models.keys()
-            ]
 
-            total_aggregated_returns = sum(aggregated_returns)
-
-            aggregated_qty = sum(Decimal(insights_dict[brand]['display_gross_units']) for brand in brand_models.keys())
-
-            overall_percentage = total_aggregated_returns*100/aggregated_qty if aggregated_qty != 0 else Decimal(0)
-
-            final_dict[key] = round(overall_percentage, 2)
 
         else:
             final_dict[key] = sum(values)  # Summing all brand values
@@ -3185,6 +3219,7 @@ def Amazon_Ads_parameters(sb_data_model, sd_data_model, sp_data_model, start_dat
 # # This works for both the single as well as the multi-brand seller account
 
 def get_dynamic_plot_AMZ(sales, sb_ads, sd_ads, sp_ads, brand, start_date, end_date):
+    
     import pandas as pd
     from plotly.subplots import make_subplots
     import plotly.graph_objects as go
@@ -3295,7 +3330,7 @@ def get_dynamic_plot_AMZ(sales, sb_ads, sd_ads, sp_ads, brand, start_date, end_d
 
     # Convert ads results to DataFrame once and use it for plotting ads metrics
     df_ads = pd.DataFrame(ads_results)
-    print(df_ads)
+    # print(df_ads)
 
     # Create plots for ads metrics: views and adsSpend
     for metric in ['views', 'adsSpend']:
@@ -3327,14 +3362,7 @@ def get_dynamic_plot_AMZ(sales, sb_ads, sd_ads, sp_ads, brand, start_date, end_d
 # This works for both single and multi-brand accounts
 def demographic_plot_AMZ(sales, brand, start_date, end_date):
     
-    # Query sales data within the date range
-    # state_order_data = (
-    #     sales.objects
-    #     .filter(invoice_date__range=[start_date, end_date])
-    #     .values('ship_to_state')
-    #     .annotate(total_quantity=Sum('quantity'))
-    #     .order_by('quantity')
-    # )
+    
 
     if brand == "":
 
@@ -4064,9 +4092,6 @@ def Amazon_PnL_calculator(start_date, end_date, time_format, seller, brand):
 
 def get_AMZ_insights(sales_data, fees_data, sb_ads_data, sd_ads_data, sp_ads_data, master_sku, cogs, returns_data, brand, start_date=None, end_date=None):
 
-    # delta_days = end_date - start_date
-    # prev_end_date = start_date - timedelta(days=1)
-    # prev_start_date = prev_end_date - delta_days
     
     # insights dictionary
     amz_insights = {}

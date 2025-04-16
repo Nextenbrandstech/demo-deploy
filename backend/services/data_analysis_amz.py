@@ -17,6 +17,8 @@ import json
 import plotly.express as px
 import geopandas as gpd
 from decimal import Decimal
+from itertools import chain
+from collections import defaultdict
 
 
 # first import the required database
@@ -39,7 +41,7 @@ amazon_brand_models = {
 
 
 """--------------------------------------------------For Amazon platform----------------------------------------------"""
-# This calculates the sales parameters associated with the Brand
+# This calculates the sales parameters associated with the Brand for single and multi-brand account
 def Amazon_sales_parameters(sales_data_model, return_data_model, brand=None, start_date=None, end_date=None):
     
     current_par = []
@@ -133,7 +135,7 @@ def Amazon_sales_parameters(sales_data_model, return_data_model, brand=None, sta
             total_quantity=Sum('return_quantity')
         )
             
-        print(f"return results {return_result}")
+        # print(f"return results {return_result}")
 
         # Build a dictionary mapping classification to its total quantity.
         return_totals = {entry['classified_return']: entry['total_quantity'] for entry in return_result}
@@ -143,10 +145,10 @@ def Amazon_sales_parameters(sales_data_model, return_data_model, brand=None, sta
         customer_return = return_totals.get('customer_return', 0)
         miscellaneous_return = return_totals.get('miscellaneous returns', 0)   
 
-        print(f"start_date {start_date} and end_date {end_date}")
-        print(f"courier return: {courier_return}")
-        print(f"customer return: {customer_return}")
-        print(f"miscellaneous return: {miscellaneous_return}")
+        # print(f"start_date {start_date} and end_date {end_date}")
+        # print(f"courier return: {courier_return}")
+        # print(f"customer return: {customer_return}")
+        # print(f"miscellaneous return: {miscellaneous_return}")
 
 
         display_return_rev = data_model.filter(order_id__in=return_order_ids, invoice_date__range=[start_date_i, extended_date], transaction_type="Refund").aggregate(return_rev=Sum(F('invoice_amount')))['return_rev'] or 0
@@ -169,7 +171,7 @@ def Amazon_sales_parameters(sales_data_model, return_data_model, brand=None, sta
         # fulfilment channel
         afn_sales = data_model.filter(Q(transaction_type='Shipment') & Q(fulfillment_channel='AFN'), invoice_date__range=[start_date_i, end_date_i]).aggregate(afn_gmv=Sum(F('invoice_amount')))['afn_gmv'] or 0
         afn_contribution = 0 if display_gmv == 0 else round(afn_sales*100/display_gmv, 2)
-        print(f"AFN contribution: {afn_contribution}")
+        # print(f"AFN contribution: {afn_contribution}")
 
         if i == 0: current_par.extend([display_gmv, display_qty, display_return_rev, display_return_qty, display_cancellation_qty, display_cancellation_rev, display_net_gmv, display_net_qty, afn_contribution, rto_percent, rtv_percent, miscellaneous_return_percent, courier_return, customer_return, miscellaneous_return])
         else: prev_par.extend([display_gmv, display_qty, display_return_rev, display_return_qty, display_cancellation_qty, display_cancellation_rev, display_net_gmv, display_net_qty, afn_contribution, rto_percent, rtv_percent, miscellaneous_return_percent, courier_return, customer_return, miscellaneous_return])
@@ -431,11 +433,11 @@ def Amazon_Ads_parameters(sb_data_model, sd_data_model, sp_data_model, start_dat
             percent_change[0], percent_change[1], percent_change[2], percent_change[3], percent_change[4], percent_change[5],
             percent_change[6], percent_change[7], percent_change[8], percent_change[9], percent_change[10], percent_change[11],
             percent_change[12], percent_change[13], percent_change[14], percent_change[15], percent_change[16], percent_change[17],
-            percent_change[18], percent_change[19], percent_change[20], percent_change[21], percent_change[22], percent_change[23],)
+            percent_change[18], percent_change[19], percent_change[20], percent_change[21], percent_change[22], percent_change[23], prev_par[18])
 
 
 
-# # For making the line plot of the different trends such as gmv, ads_spend etc
+# For making the line plot of the different trends such as gmv, ads_spend etc. This works for both single and multi-brand account
 def get_dynamic_plot_AMZ(sales, sb_ads, sd_ads, sp_ads, brand, start_date, end_date):
     import pandas as pd
     from plotly.subplots import make_subplots
@@ -579,14 +581,6 @@ def get_dynamic_plot_AMZ(sales, sb_ads, sd_ads, sp_ads, brand, start_date, end_d
 # This works for both Multiple and Single seller 
 def demographic_plot_AMZ(sales, brand, start_date, end_date):
     
-    # Query sales data within the date range
-    # state_order_data = (
-    #     sales.objects
-    #     .filter(invoice_date__range=[start_date, end_date])
-    #     .values('ship_to_state')
-    #     .annotate(total_quantity=Sum('quantity'))
-    #     .order_by('quantity')
-    # )
 
     if brand == "":
 
@@ -976,6 +970,7 @@ def return_product_AMZ(sales, master_sku, brand, start_date, end_date):
 
 
 # Calculating the COGS for the Brand on Amazon platform
+# This works for both, single and multi-brand account
 def cogs_calculation(sales_data, cogs_vertical, brand, start_date, end_date):
     
     # ------approach------
@@ -1033,7 +1028,7 @@ def Amazon_PnL_parameters(sales_data, cogs_vertical, fees_data, sb_ads_data, sd_
         _, _, _, _, _, _,
         _, _, _, _, _, _,
         _, _, _, _, _, _,
-        _, _, _, _, _, _) = Amazon_Ads_parameters(sb_ads_data, sd_ads_data, sp_ads_data, start_date, end_date)
+        _, _, _, _, _, _, _) = Amazon_Ads_parameters(sb_ads_data, sd_ads_data, sp_ads_data, start_date, end_date)
     
     operations = 0
 
@@ -1326,10 +1321,6 @@ def Amazon_PnL_calculator(start_date, end_date, time_format, seller, brand):
 
 
 def get_AMZ_insights(sales_data, fees_data, sb_ads_data, sd_ads_data, sp_ads_data, master_sku, cogs, returns_data, brand, start_date=None, end_date=None):
-
-    # delta_days = end_date - start_date
-    # prev_end_date = start_date - timedelta(days=1)
-    # prev_start_date = prev_end_date - delta_days
     
     # insights dictionary
     amz_insights = {}
@@ -1349,7 +1340,7 @@ def get_AMZ_insights(sales_data, fees_data, sb_ads_data, sd_ads_data, sp_ads_dat
         percent_change_sb_ads_spend, percent_change_sb_ads_rev, percent_change_sb_ads_roas, percent_change_sb_ads_cpc, percent_change_sb_ads_ctr, percent_change_sb_ads_cvr,
         percent_change_sd_ads_spend, percent_change_sd_ads_rev, percent_change_sd_ads_roas, percent_change_sd_ads_cpc, percent_change_sd_ads_ctr, percent_change_sd_ads_cvr,
         percent_change_sp_ads_spend, percent_change_sp_ads_rev, percent_change_sp_ads_roas, percent_change_sp_ads_cpc, percent_change_sp_ads_ctr, percent_change_sp_ads_cvr,
-        percent_change_ads_spend, percent_change_ads_rev, percent_change_ads_roas, percent_change_ads_cpc, percent_change_ads_ctr, percent_change_ads_cvr,) = Amazon_Ads_parameters(sb_ads_data, sd_ads_data, sp_ads_data, start_date, end_date)
+        percent_change_ads_spend, percent_change_ads_rev, percent_change_ads_roas, percent_change_ads_cpc, percent_change_ads_ctr, percent_change_ads_cvr, prev_display_ads_spend) = Amazon_Ads_parameters(sb_ads_data, sd_ads_data, sp_ads_data, start_date, end_date)
     
     # product level details
     product_data = return_product_AMZ(sales_data, master_sku, brand, start_date, end_date)
@@ -1420,6 +1411,7 @@ def get_AMZ_insights(sales_data, fees_data, sb_ads_data, sd_ads_data, sp_ads_dat
         "display_cvr": round(ads_cvr, 2),
         "display_ctr": round(ads_ctr, 2),
         "display_afn_contribution": display_afn_contribution,
+        "prev_display_ads_spend": prev_display_ads_spend,
 
         # change in the percentage for the cards
         "percent_change_gross_revenue": display_gmv_percent,
@@ -1450,40 +1442,42 @@ def get_AMZ_insights(sales_data, fees_data, sb_ads_data, sd_ads_data, sp_ads_dat
         "net_sales_details_vertical": net_sales_details_vertical
 
     }
-
+    # print(f"Amazon insights: {amz_insights}")
     return amz_insights
 
 
 
 """--------------As of now the above functions is for handling single and multi-brand seller account-----------------"""
 
-"""The below code is for showing the metrices overall"""
+"""The below code is for showing the metrices overall ("All Seller" case)"""
 
-"""From Monday 7 April start working on the "all_seller" implementation part"""
 
 def all_brand_AMZ(start_date, end_date):
 
     final_dict = {}
     insights_dict = {}
-
+    print(f"Start date {start_date} and end date {end_date}")
     # Fetch insights dynamically for all brands
     for brand, models in amazon_brand_models.items():
+        sub_brand = ""
+        print(f"Brand {brand} and models {models}")
+
         insights_dict[brand] = get_AMZ_insights(
             models['sales'], models['codb_fees'], models['sb_ads'], models['sd_ads'], models['sp_ads'],
-            models['master_sku'], models['cogs'], models['returns'], brand, start_date, end_date
+            models['master_sku'], models['cogs'], models['returns'], sub_brand, start_date, end_date
         )
 
-    # Extract the first 33 key-value pairs from each brand
-    insights_list = [list(insights.items())[:33] for insights in insights_dict.values()]
+    # Extract the first 35 key-value pairs from each brand
+    insights_list = [list(insights.items())[:35] for insights in insights_dict.values()]
+    
+    print(f"Insights lists: {insights_list}")
 
     # Iterate over multiple brands dynamically
     for values in zip(*insights_list):
-        print(f"Values of the loop: {values}")
 
         keys = [v[0] for v in values]  # Extract keys (they should be identical across brands)
-        print(f"Keys: {keys}")
+        
         values = [v[1] for v in values]  # Extract values
-        print(f"Values: {values}")
         
         key = keys[0]  # Any key from the extracted list
         
@@ -1502,12 +1496,14 @@ def all_brand_AMZ(start_date, end_date):
                         Decimal(100) * Decimal(insights_dict[brand][key]) / (Decimal(insights_dict[brand][percent_change_key]) + Decimal(100))
                         for brand in amazon_brand_models.keys()
                     ]
+
                     current_clicks = [
-                        Decimal(insights_dict[brand]['display_ads_spend']) / Decimal(insights_dict[brand][key])
+                        0 if Decimal(insights_dict[brand][key]) == 0 else Decimal(insights_dict[brand]['display_ads_spend']) / Decimal(insights_dict[brand][key])
                         for brand in amazon_brand_models.keys()
                     ]
+
                     prev_clicks = [
-                        Decimal(insights_dict[brand]['prev_display_ads_spend']) / Decimal(val)
+                        0 if Decimal(val) == 0 else Decimal(insights_dict[brand]['prev_display_ads_spend']) / Decimal(val)
                         for brand, val in zip(amazon_brand_models.keys(), prev_cpc_values)
                     ]
 
@@ -1553,58 +1549,198 @@ def all_brand_AMZ(start_date, end_date):
                     final_dict[key] = round(overall_roas, 2)
                     final_dict[percent_change_key] = overall_percent_change
 
+                elif 'ctr' in key:
+                    
+                    current_clicks = [
+                        0 if Decimal(insights_dict[brand]['display_cpc']) == 0 else Decimal(insights_dict[brand]['display_ads_spend']) / Decimal(insights_dict[brand]['display_cpc'])
+                        for brand in amazon_brand_models.keys()
+                    ]
+
+                    current_views = [
+                        0 if Decimal(insights_dict[brand][key]) == 0 else Decimal(val) / Decimal(insights_dict[brand][key])
+                        for brand, val in zip(amazon_brand_models.keys(), current_clicks)
+                    ]
+
+                    total_clicks = sum(current_clicks)
+                    total_views = sum(current_views)
+
+                    overall_ctr = 0 if total_views == 0 else total_clicks/total_views
+
+                    prev_cpc = [
+                        Decimal(100) * Decimal(insights_dict[brand]['display_cpc']) / (Decimal(insights_dict[brand]['percent_change_cpc']) + Decimal(100))
+                        for brand in amazon_brand_models.keys()
+                    ]
+
+                    prev_clicks = [
+                        0 if Decimal(val) == 0 else Decimal(insights_dict[brand]['prev_display_ads_spend']) / Decimal(val)
+                        for brand, val in zip(amazon_brand_models.keys(), prev_cpc)
+                    ]
+
+                    prev_ctr = [
+                        Decimal(100) * Decimal(insights_dict[brand][key]) / (Decimal(insights_dict[brand][percent_change_key]) + Decimal(100))
+                        for brand in amazon_brand_models.keys()
+                    ]
+
+                    prev_views = [
+                        0 if Decimal(prev_ctr_val) == 0 else Decimal(prev_click_val) / Decimal(prev_ctr_val)
+                        for prev_click_val, prev_ctr_val in zip(prev_clicks, prev_ctr)
+                    ]
+
+                    total_prev_clicks = sum(prev_clicks)
+                    total_prev_views = sum(prev_views)
+
+                    overall_prev_ctr = 0 if total_prev_views == 0 else total_prev_clicks/total_prev_views
+
+                    overall_ctr_percent_change = 0 if overall_prev_ctr == 0 else (overall_ctr - overall_prev_ctr)*100/(overall_prev_ctr)
+
+                    final_dict[key] = round(overall_ctr, 2)
+                    final_dict[percent_change_key] = round(overall_ctr_percent_change, 2)
+
+                    # print(f"total_clicks: {total_clicks} total_views: {total_views} overall_ctr: {overall_ctr}")
+
+                elif 'cvr' in key:
+                    
+                    current_clicks = [
+                        0 if Decimal(insights_dict[brand]['display_cpc']) == 0 else Decimal(insights_dict[brand]['display_ads_spend']) / Decimal(insights_dict[brand]['display_cpc'])
+                        for brand in insights_dict.keys()
+                    ]
+
+                    current_orders = [
+                        Decimal(click_val) * Decimal(insights_dict[brand][key])
+                        for brand, click_val in zip(amazon_brand_models.keys(), current_clicks)
+                    ]
+
+                    total_orders = sum(current_orders)
+                    total_clicks = sum(current_clicks)
+
+                    overall_cvr = 0 if total_clicks == 0 else total_orders/total_clicks
+
+                    prev_cvr = [
+                        Decimal(100) * Decimal(insights_dict[brand][key]) / (Decimal(100) + Decimal(insights_dict[brand][percent_change_key]))
+                        for brand in amazon_brand_models.keys()
+                    ]
+
+                    prev_cpc = [
+                        Decimal(100) * Decimal(insights_dict[brand]['display_cpc']) / (Decimal(insights_dict[brand]['percent_change_cpc']) + Decimal(100))
+                        for brand in amazon_brand_models.keys()
+                    ]
+
+                    prev_clicks = [
+                        0 if Decimal(val) == 0 else Decimal(insights_dict[brand]['prev_display_ads_spend']) / Decimal(val)
+                        for brand, val in zip(amazon_brand_models.keys(), prev_cpc)
+                    ]
+
+                    prev_orders = [
+                        Decimal(prev_cvr_val) * Decimal(prev_click_val)
+                        for prev_cvr_val, prev_click_val in zip(prev_cvr, prev_clicks)
+                    ]
+
+                    total_prev_orders = sum(prev_orders)
+                    total_prev_clicks = sum(prev_clicks)
+
+                    overall_prev_cvr = 0 if total_prev_clicks == 0 else total_prev_orders/total_prev_clicks
+
+                    overall_percent_change_cvr = 0 if overall_prev_cvr == 0 else (overall_cvr - overall_prev_cvr)*100/overall_prev_cvr
+
+                    final_dict[key] = round(overall_cvr, 2)
+                    final_dict[percent_change_key] = round(overall_percent_change_cvr, 2)
+
                 elif 'afn_contribution' in key:
                     
-                    current_fbf_sales = [
-                        Decimal(insights_dict[brand][key]) * Decimal(insights_dict[brand]['display_net_revenue']) / Decimal(100)
+                    current_afn_sales = [
+                        Decimal(insights_dict[brand]['display_gross_revenue']) * Decimal(insights_dict[brand][key])
                         for brand in amazon_brand_models.keys()
                     ]
 
-                    prev_fbf_contri = [
-                        Decimal(100) * Decimal(insights_dict[brand][key]) / (Decimal(insights_dict[brand][percent_change_key]) + Decimal(100))
+                    current_gmv = [
+                        Decimal(insights_dict[brand]['display_gross_revenue'])
                         for brand in amazon_brand_models.keys()
                     ]
 
-                    prev_fbf_sales = [
-                        Decimal(val) * Decimal(insights_dict[brand]['prev_display_net_revenue']) / Decimal(100)
-                        for brand, val in zip(amazon_brand_models.keys(), prev_fbf_contri)
-                    ]
+                    total_afn_sales = sum(current_afn_sales)
+                    total_gmv = sum(current_gmv)
 
-                    overall_fbf_contri = sum(current_fbf_sales)*100/sum(Decimal(insights_dict[brand]['display_net_revenue']) for brand in amazon_brand_models.keys())
-                    overall_prev_fbf_contri = sum(prev_fbf_sales)*100/sum(Decimal(insights_dict[brand]['prev_display_net_revenue']) for brand in amazon_brand_models.keys())
+                    overall_afn_contribution = 0 if total_gmv == 0 else total_afn_sales*100/total_gmv
 
-                    overall_percent_change = round(((overall_fbf_contri - overall_prev_fbf_contri) * Decimal(100)) / overall_prev_fbf_contri, 3) if overall_prev_fbf_contri != 0 else Decimal(0)
-
-                    final_dict[key] = round(overall_fbf_contri, 2)
-                    final_dict[percent_change_key] = overall_percent_change
-
-                elif 'shopsy_contribution' in key:
-                    
-                    current_shopsy_sales = [
-                        Decimal(insights_dict[brand][key]) * Decimal(insights_dict[brand]['display_net_revenue']) / Decimal(100)
+                    prev_afn_contribution = [
+                        Decimal(100) * Decimal(insights_dict[brand][key]) / (Decimal(100) + Decimal(insights_dict[brand][percent_change_key]))
                         for brand in amazon_brand_models.keys()
                     ]
 
-                    prev_shopsy_contri = [
-                        Decimal(100) * Decimal(insights_dict[brand][key]) / (Decimal(insights_dict[brand][percent_change_key]) + Decimal(100))
+                    prev_gmv = [
+                        Decimal(100) * Decimal(insights_dict[brand]['display_gross_revenue']) / (Decimal(100) + Decimal(insights_dict[brand]['percent_change_gross_revenue']))
                         for brand in amazon_brand_models.keys()
                     ]
 
-                    prev_shopsy_sales = [
-                        Decimal(val) * Decimal(insights_dict[brand]['prev_display_net_revenue']) / Decimal(100)
-                        for brand, val in zip(amazon_brand_models.keys(), prev_shopsy_contri)
+                    prev_afn_sales = [
+                        Decimal(prev_afn_contribution_val) * Decimal(prev_gmv_val)
+                        for prev_afn_contribution_val, prev_gmv_val in zip(prev_afn_contribution, prev_gmv)
                     ]
 
-                    overall_shopsy_contri = sum(current_shopsy_sales)*100/sum(Decimal(insights_dict[brand]['display_net_revenue']) for brand in amazon_brand_models.keys())
-                    overall_prev_shopsy_contri = sum(prev_shopsy_sales)*100/sum(Decimal(insights_dict[brand]['prev_display_net_revenue']) for brand in amazon_brand_models.keys())
+                    total_prev_gmv = sum(prev_gmv)
+                    total_prev_afn_sales = sum(prev_afn_sales)
 
-                    overall_percent_change = round(((overall_shopsy_contri - overall_prev_shopsy_contri) * Decimal(100)) / overall_prev_shopsy_contri, 3) if overall_prev_shopsy_contri != 0 else Decimal(0)
+                    overall_prev_afn_contribution = 0 if total_prev_gmv == 0 else total_prev_afn_sales*100/total_prev_gmv
 
-                    final_dict[key] = round(overall_shopsy_contri, 2)
-                    final_dict[percent_change_key] = overall_percent_change
+                    overall_percent_change_afn = 0 if overall_prev_afn_contribution == 0 else (overall_afn_contribution - overall_prev_afn_contribution)*100/overall_prev_afn_contribution
 
+                    final_dict[key] = round(overall_afn_contribution, 2)
+                    final_dict[percent_change_key] = round(overall_percent_change_afn, 2)
 
+        elif any(substring in key for substring in ('rto_percent', 'rtv_percent', 'misc_return_percent')):
+
+            rto_qty = [
+                Decimal(insights_dict[brand]['display_rto_return'])
+                for brand in amazon_brand_models.keys()
+            ]
+
+            total_rto_qty = sum(rto_qty)
+                
+            display_qty = [
+                Decimal(insights_dict[brand]['display_gross_units'])
+                for brand in amazon_brand_models.keys()
+            ]
+
+            total_display_qty = sum(display_qty)
+
+            misc_qty = [
+                Decimal(insights_dict[brand]['display_misc_return'])
+                for brand in amazon_brand_models.keys()
+            ]
+
+            total_misc_qty = sum(misc_qty)
+
+            rtv_qty = [
+                Decimal(insights_dict[brand]['display_rtv_return'])
+                for brand in amazon_brand_models.keys()
+            ]
+
+            total_rtv_qty = sum(rtv_qty)
+
+            cancellation_qty = [
+                Decimal(insights_dict[brand]['display_cancellation_units'])
+                for brand in amazon_brand_models.keys()
+            ]
+
+            total_cancellation_qty = sum(cancellation_qty)
+            
+            if 'rto_percent' in key:
+                
+                overall_rto_percent = 0 if (total_display_qty - total_misc_qty) == 0 else total_rto_qty * 100 / (total_display_qty - total_misc_qty)
+                final_dict["display_rto_percent"] = round(overall_rto_percent, 2)
+        
+            elif 'rtv_percent' in key:
+
+                overall_rtv_percent = 0 if (total_display_qty - total_cancellation_qty - total_rto_qty) == 0 else total_rtv_qty * 100 / (total_display_qty - total_cancellation_qty - total_rto_qty)
+                final_dict['display_rtv_percent'] = round(overall_rtv_percent, 2)
+            
+            elif 'misc_return_percent' in key:
+
+                overall_misc_return_percent = 0 if total_display_qty == 0 else total_misc_qty * 100 / total_display_qty
+                final_dict['display_misc_return_percent'] = round(overall_misc_return_percent, 2)
+        
         elif 'percent_' in key:
+
             # Calculate previous values dynamically
             current_key = 'display_' + key.split('percent_change_')[1]
             prev_values = [
@@ -1622,36 +1758,362 @@ def all_brand_AMZ(start_date, end_date):
 
             final_dict[key] = float(overall_percent_change)  # Convert back to float for output
         
-        elif any(substring in key for substring in ('rto', 'rtv', 'miscellaneous_returns')):
-            
-            # Aggregating return metrics is sum of either 'rto', 'rtv', or 'miscellaneous_returns'
-            # Don't get confused by total returns
-            
-            aggregated_returns = [
-                Decimal(insights_dict[brand]['display_gross_units'])*Decimal(insights_dict[brand][key])/Decimal(100)
-                for brand in amazon_brand_models.keys()
-            ]
-
-            total_aggregated_returns = sum(aggregated_returns)
-
-            aggregated_qty = sum(Decimal(insights_dict[brand]['display_gross_units']) for brand in amazon_brand_models.keys())
-
-            overall_percentage = total_aggregated_returns*100/aggregated_qty if aggregated_qty != 0 else Decimal(0)
-
-            final_dict[key] = round(overall_percentage, 2)
 
         else:
             final_dict[key] = sum(values)  # Summing all brand values
+
 
     # Merging category-wise details dynamically
     category_keys = [
         "sales_details_title", "sales_details_vertical",
         "return_details_title", "return_details_vertical",
         "cancelled_details_title", "cancelled_details_vertical",
-        "net_sale_details_title", "net_sale_details_vertical"
+        "net_sales_details_title", "net_sales_details_vertical"
     ]
 
     for cat_key in category_keys:
         final_dict[cat_key] = sum((list(insights[cat_key]) for insights in insights_dict.values()), [])
-    print(len(final_dict))
+    
     return final_dict
+
+
+
+def all_brand_map_AMZ(start_date, end_date):
+
+    state_order_data = pd.DataFrame()
+
+    # Process each brand dynamically
+    # for brand, model in brands_config.items():
+    for brand, models in amazon_brand_models.items():
+        shipping_data = (
+            models["sales"].objects
+            .filter(invoice_date__range=[start_date, end_date])
+            .values('ship_to_state')
+            .annotate(total_quantity=Sum('quantity'))
+            .order_by('total_quantity')
+        )
+
+        # Convert QuerySet to DataFrame
+        brand_df = pd.DataFrame(list(shipping_data))
+
+        # Rename column to avoid conflicts in merging
+        if not brand_df.empty:
+            brand_df.rename(columns={'total_quantity': f'total_quantity_{brand}'}, inplace=True)
+
+            # Merge data dynamically
+            if state_order_data.empty:
+                state_order_data = brand_df
+            else:
+                state_order_data = pd.merge(
+                    state_order_data, brand_df, on='ship_to_state', how='outer'
+                )
+
+    # Sum across all brands to get total quantity per state
+    if not state_order_data.empty:
+        quantity_columns = [col for col in state_order_data.columns if 'total_quantity_' in col]
+        state_order_data['total_quantity'] = state_order_data[quantity_columns].sum(axis=1, min_count=1)
+
+        # Keep only necessary columns
+        state_order_data = state_order_data[['ship_to_state', 'total_quantity']]
+
+
+    all_states = [
+        "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat",
+        "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka", "Kerala",
+        "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha",
+        "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh",
+        "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh",
+        "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Ladakh", "Lakshadweep", "Puducherry"
+    ]
+
+
+    df = state_order_data
+
+    if df.empty:
+        # Create a new DataFrame with all_states and total_quantity set to 0
+        df = pd.DataFrame({
+            'ship_to_state': all_states,
+            'total_quantity': [0] * len(all_states)
+        })
+    
+    # Function to capitalize the first letter of every word and make 'AND' lowercase
+    def format_ship_to_state(state):
+        words = state.split()
+        return ' '.join([word.capitalize() if word != "AND" else "and" for word in words])
+
+
+    # Apply the function to the 'ship_to_state' column
+    df['ship_to_state'] = df['ship_to_state'].apply(format_ship_to_state)
+
+    # Find missing states and add them with zero quantity
+    current_states = set(df['ship_to_state'].unique())
+    missing_states = set(all_states) - current_states
+    
+    # Add missing states with zero values
+    if missing_states:
+        missing_df = pd.DataFrame({
+            'ship_to_state': list(missing_states),
+            'total_quantity': [0] * len(missing_states)
+        })
+        df = pd.concat([df, missing_df], ignore_index=True)
+
+    # Load the India GeoJSON
+    with open("india.geojson", "r", encoding="utf-8") as f:
+        india_geojson = json.load(f)
+
+    # Convert to GeoDataFrame
+    gdf = gpd.GeoDataFrame.from_features(india_geojson)
+    
+    # Dissolve districts into states
+    gdf_dissolved = gdf.dissolve(by='st_nm', as_index=False)
+    
+    # Convert back to GeoJSON
+    simplified_geojson = json.loads(gdf_dissolved.to_json())
+
+    # Create the choropleth figure with simplified GeoJSON
+    fig = go.Figure(data=go.Choropleth(
+        geojson=simplified_geojson,
+        locations=df['ship_to_state'],
+        z=df['total_quantity'],
+        locationmode='geojson-id',
+        featureidkey='properties.st_nm',
+        colorscale='Greens',
+        colorbar=dict(
+            title="Order Quantity",
+            x=0.85,  # Shift color scale closer to the map
+            y=0.5,   # Center color scale vertically
+            ticks="outside"
+        ),
+        hovertemplate="<b>State: %{location}</b><br>" +
+                      "Orders: %{z}<br><extra></extra>",
+        showscale=True
+    ))
+
+    # Update the layout for better visualization
+    fig.update_geos(
+        visible=False,
+        center=dict(lat=23.5937, lon=78.9629),  # Center of India
+        projection_scale=5.5,  # Zoom into the map for a tighter fit
+        showcoastlines=False,
+        showframe=False,
+        fitbounds="locations"  # Ensures the map tightly fits the data
+    )
+
+    fig.update_layout(
+        title=dict(
+            text='Order Distribution Across India',
+            x=0.5,
+            y=0.95
+        ),
+        geo=dict(
+            scope='asia',
+            showlakes=False,
+            showcountries=False,
+            subunitcolor='black',
+            subunitwidth=1,
+            showland=True,
+            landcolor='white'
+        ),
+        margin=dict(r=0, t=0, l=0, b=0),  # Remove unnecessary margins
+        height=500,  # Chart height
+        width=600   # Chart width for a compact layout
+    )
+
+    return fig.to_json()
+
+
+# This function is complete and works for all sorts of brand like 1st Step, Jr Sr and NexTen
+def all_brand_pie_AMZ(start_date, end_date):
+    # Collect GMV data for all brands dynamically
+    sales_data = []
+    for seller, models in amazon_brand_models.items():
+        
+        gmv = models["sales"].objects.filter(invoice_date__range=[start_date, end_date]).aggregate(
+            gmv=Sum(F('invoice_amount'))
+        )['gmv'] or 0  # Handle None values by defaulting to 0
+        
+        sales_data.append({"seller": seller, "gmv": gmv})
+
+    # Compute total GMV
+    total_gmv = sum(item['gmv'] for item in sales_data if item['gmv'])
+
+    # Calculate GMV proportions dynamically
+    sales_data = [
+        {
+            'seller': item['seller'],
+            'gmv': item['gmv'],
+            'gmv_proportion': round((item['gmv'] * 100 / total_gmv), 2) if total_gmv else 0
+        }
+        for item in sales_data
+    ]
+
+    # Prepare data for the Plotly pie chart
+    labels = [f"{item['seller']} ({item['gmv_proportion']}%)" for item in sales_data]
+    sizes = [item['gmv'] for item in sales_data]
+
+    # Create a Plotly pie chart
+    fig = go.Figure(
+        data=[
+            go.Pie(
+                labels=labels,
+                values=sizes,
+                textinfo='none',  # Disable text inside the pie chart
+                hoverinfo='label+percent',  # Display label and percentage on hover
+            )
+        ]
+    )
+
+    # Update layout for the pie chart
+    fig.update_layout(
+        title="GMV Distribution by Seller",
+        showlegend=True,
+        legend_title="Seller",
+        legend=dict(
+            itemsizing="constant",
+            orientation="v",
+            x=1.1,  
+            y=0.5,  
+            xanchor="left",  
+            bgcolor="rgba(255, 255, 255, 0)",  
+        ),
+        margin=dict(l=10, r=10, t=30, b=10),
+        height=500,  
+        width=600    
+    )
+
+    # Convert the Plotly figure to JSON
+    return fig.to_json()
+
+
+# This function is complete and works for all sorts of brand like 1st Step, Jr Sr and NexTen
+def all_brand_dynamic_plot_AMZ(start_date, end_date):
+
+    # Access global brand models and ad models
+    # global amazon_brand_models  # Assuming this is defined globally
+    figures = {}
+
+    # --------------------------
+    # Combine Sales Data for all brands
+    # --------------------------
+    sales_dfs = []
+    for brand, models in amazon_brand_models.items():
+        # Query Sales Data for each brand within the given date range
+        sales_data = models["sales"].objects.filter(invoice_date__range=[start_date, end_date])
+
+        # Aggregating GMV and Quantity (qty) for each brand
+        sales_agg = (
+            sales_data.values('invoice_date')
+            .annotate(
+                gmv=Cast(Sum('invoice_amount', filter=Q(transaction_type='Shipment')), FloatField()),
+                qty=Cast(Sum('quantity', filter=Q(transaction_type='Shipment')), FloatField())
+            )
+            .order_by('invoice_date')
+        )
+
+        # Convert the aggregated sales data into a DataFrame
+        df_sales = pd.DataFrame(list(sales_agg)).rename(columns={'invoice_date': 'date'})
+        sales_dfs.append(df_sales)
+
+    # Combine all brand's sales data into a single DataFrame
+    combined_sales_data = pd.concat(sales_dfs, ignore_index=True) if sales_dfs else pd.DataFrame(columns=['date', 'gmv', 'qty'])
+
+    # Aggregate by date for combined GMV and qty
+    sales_agg_combined = combined_sales_data.groupby('date').agg(
+        gmv=('gmv', 'sum'),
+        qty=('qty', 'sum')
+    ).reset_index()
+
+    # --------------------------
+    # Combine Ads Data for all brands
+    # --------------------------
+    ads_dfs = []
+    for brand, models in amazon_brand_models.items():
+        # Query Ads Data for each brand
+        sb_qs = models["sb_ads"].objects.filter(date__range=[start_date, end_date])
+        sd_qs = models["sd_ads"].objects.filter(date__range=[start_date, end_date])
+        sp_qs = models["sp_ads"].objects.filter(date__range=[start_date, end_date])
+
+        # Annotating data for each ad model
+        sb_data = sb_qs.values('date').annotate(views=Sum('impressions'), adsSpend=Sum('spend'), ads_rev=Sum('day_14_total_sales'))
+        sd_data = sd_qs.values('date').annotate(views=Sum('impressions'), adsSpend=Sum('spend'), ads_rev=Sum('day_14_total_sales'))
+        sp_data = sp_qs.values('date').annotate(views=Sum('impressions'), adsSpend=Sum('spend'), ads_rev=Sum('day_14_total_sales'))
+
+        # Combine the three datasets
+        combined_ads = list(chain(sb_data, sd_data, sp_data))
+        ads_dfs.append(combined_ads)
+
+    # Combine all ads data into one
+    combined_ads_data = list(chain(*ads_dfs))
+
+    # Group the ads data by date and sum the metrics
+    grouped_ads = defaultdict(lambda: {'views': 0, 'adsSpend': 0, 'ads_rev': 0})
+    for record in combined_ads_data:
+        record_date = record['date']
+        grouped_ads[record_date]['views'] += record.get('views') or 0
+        grouped_ads[record_date]['adsSpend'] += record.get('adsSpend') or 0
+        grouped_ads[record_date]['ads_rev'] += record.get('ads_rev') or 0
+
+    ads_results = [
+        {'date': date, 'views': data['views'], 'adsSpend': data['adsSpend'], 'ads_rev': data['ads_rev']}
+        for date, data in grouped_ads.items()
+    ]
+    ads_results.sort(key=lambda x: x['date'])
+
+    df_ads = pd.DataFrame(ads_results)
+
+    # --------------------------
+    # Helper Function to Create Plots
+    # --------------------------
+    def create_figure(df, metric):
+        fig = make_subplots(rows=1, cols=1)
+        fig.add_trace(go.Scatter(
+            x=df['date'],
+            y=df['total_metric'],
+            mode='lines+markers',
+            marker=dict(size=8),
+            line=dict(width=2),
+            hoverinfo='x+y',
+            name=metric.upper()
+        ))
+        fig.update_layout(
+            title=f'{metric.upper()} vs Date',
+            xaxis=dict(title='Date', tickangle=45),
+            yaxis=dict(title=metric.upper(), tickformat=".2f"),
+            template='plotly_white',
+            autosize=True,
+            margin=dict(l=40, r=40, t=40, b=40)
+        )
+        return fig.to_json()
+
+    # --------------------------
+    # Step 4: Generate Plots for Combined Sales Data (GMV and Quantity)
+    # --------------------------
+    for metric in ['gmv', 'qty']:
+        df_temp = sales_agg_combined[['date', metric]].copy()
+        df_temp.rename(columns={metric: 'total_metric'}, inplace=True)
+        figures[metric] = create_figure(df_temp, metric)
+
+    # --------------------------
+    # Step 5: Generate Ads Metrics Plots (Views, Ad Spend)
+    # --------------------------
+    for metric in ['views', 'adsSpend']:
+        if df_ads.empty:
+            df_temp = pd.DataFrame({'date': [start_date], 'total_metric': [0]})
+        else:
+            df_temp = df_ads[['date', metric]].copy()
+            df_temp.rename(columns={metric: 'total_metric'}, inplace=True)
+        figures[metric] = create_figure(df_temp, metric)
+
+    # --------------------------
+    # Step 6: Calculate and Plot ROI (ads_rev / adsSpend)
+    # --------------------------
+    if df_ads.empty:
+        df_roi = pd.DataFrame({'date': [start_date], 'total_metric': [0]})
+    else:
+        df_roi = df_ads.copy()
+        df_roi['total_metric'] = df_roi.apply(
+            lambda row: row['ads_rev'] / row['adsSpend'] if row['adsSpend'] != 0 else 0, axis=1
+        )
+    figures['roi'] = create_figure(df_roi, 'roi')
+
+    return {"dynamic_plot": figures}

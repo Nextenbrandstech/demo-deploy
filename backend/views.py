@@ -11,7 +11,8 @@ from backend.services.data_analysis import (get_fk_insights, get_dynamic_plot_fl
                                             all_brand_Flipkart, all_brand_map_Flipkart, all_brand_pie_Flipkart, all_brand_dynamic_plot_Flipkart,
                                             Flipkart_PnL_calculator, get_fk_insights_multi_brand, Flipkart_PnL_calculator_multi_brand)
 
-from backend.services.data_analysis_amz import (get_AMZ_insights, get_dynamic_plot_AMZ, demographic_plot_AMZ, pie_chart_AMZ, Amazon_PnL_calculator)
+from backend.services.data_analysis_amz import (get_AMZ_insights, get_dynamic_plot_AMZ, demographic_plot_AMZ, pie_chart_AMZ, Amazon_PnL_calculator,
+                                                all_brand_dynamic_plot_AMZ, all_brand_AMZ, all_brand_map_AMZ, all_brand_pie_AMZ)
 
 
 import logging
@@ -124,6 +125,8 @@ def fk_insights_view(request):
         
         plot_figure = all_brand_dynamic_plot_Flipkart(start_date, end_date)
         insights['dynamic_plot'] = plot_figure
+
+        print(f"Fetching of the general data is complete.........")
         
         return JsonResponse(insights)
     
@@ -173,6 +176,8 @@ def fk_insights_view(request):
         insights['demographic_plot'] = demographic_figure
         insights['dynamic_plot'] = plot_figure
         insights['pie_chart'] = pie_chart
+
+        print(f"Fetching of the general data is complete.........")
 
         return JsonResponse(insights)
     
@@ -226,6 +231,8 @@ def fk_insights_view(request):
         insights['demographic_plot'] = demographic_figure
         insights['pie_chart'] = pie_chart
 
+        print(f"Fetching of the general data is complete.........")
+
         # 9) Return everything as JSON
         return JsonResponse(insights)
 
@@ -260,7 +267,7 @@ def flipkart_pnl_view(request):
         print(f"all seller or only seller case is triggered!!!")
         pnl_details = Flipkart_PnL_calculator(start_date, end_date, time_format, seller)
 
-    print(f"Fetching of the data is complete......")
+    print(f"Fetching of the PnL data is complete......")
 
     return JsonResponse(pnl_details)
 
@@ -304,59 +311,82 @@ def amz_insights_view(request):
         },
     }
 
-    if seller not in brand_models:
-        return JsonResponse({"error": "Invalid brand selected"}, status=400)
+    # if seller not in brand_models:
+    #     return JsonResponse({"error": "Invalid brand selected"}, status=400)
 
-    models = brand_models[seller]
-
-    print("insight function is called !!!")
-
-    insights = get_AMZ_insights(
-        models["sales"],
-        models["codb_fees"],
-        models["sb_ads"],
-        models["sd_ads"],
-        models["sp_ads"],
-        models["master_sku"],
-        models["cogs"],
-        models["returns"],
-        brand,
-        start_date,
-        end_date
-    )
-    # print(f"Data send by Backend: {insights}")
-
-    demographic_figure = demographic_plot_AMZ(
-            models["sales"],
-            brand,
-            start_date,
-            end_date
-        )
     
-    pie_chart = pie_chart_AMZ(
+    insights = {}
+
+    if seller == "All Seller":
+        print(f"all seller case is triggered!!!")
+        
+        insights = all_brand_AMZ(start_date, end_date)
+        print(f"Checking the cards and table data {insights}")
+        
+        demographic_figure = all_brand_map_AMZ(start_date, end_date)
+        insights['demographic_plot'] = demographic_figure
+        
+        pie_chart = all_brand_pie_AMZ(start_date, end_date)
+        insights['pie_chart'] = pie_chart
+        
+        plot_figure = all_brand_dynamic_plot_AMZ(start_date, end_date)
+        insights['dynamic_plot'] = plot_figure
+
+        print(f"Fetching of the general data is complete.........")
+        
+        return JsonResponse(insights)
+
+    
+    else:
+        models = brand_models[seller]
+
+        insights = get_AMZ_insights(
             models["sales"],
+            models["codb_fees"],
+            models["sb_ads"],
+            models["sd_ads"],
+            models["sp_ads"],
             models["master_sku"],
+            models["cogs"],
+            models["returns"],
             brand,
             start_date,
             end_date
         )
-    
-    plot_figure = get_dynamic_plot_AMZ(
-            models["sales"],
-            models['sb_ads'],
-            models['sd_ads'],
-            models['sp_ads'],
-            brand,
-            start_date,
-            end_date
-        )
-    
-    insights['demographic_plot'] = demographic_figure
-    insights['pie_chart'] = pie_chart
-    insights['dynamic_plot'] = plot_figure
+
+        demographic_figure = demographic_plot_AMZ(
+                models["sales"],
+                brand,
+                start_date,
+                end_date
+            )
+        
+        pie_chart = pie_chart_AMZ(
+                models["sales"],
+                models["master_sku"],
+                brand,
+                start_date,
+                end_date
+            )
+        
+        plot_figure = get_dynamic_plot_AMZ(
+                models["sales"],
+                models['sb_ads'],
+                models['sd_ads'],
+                models['sp_ads'],
+                brand,
+                start_date,
+                end_date
+            )
+        
+        insights['demographic_plot'] = demographic_figure
+        insights['pie_chart'] = pie_chart
+        insights['dynamic_plot'] = plot_figure
+
+        print(f"Fetching of the general data is complete.........")
 
 
-    return JsonResponse(insights)
+        return JsonResponse(insights)
 
 # PnL Details of Amazon Platform
 @login_required(login_url='/backend/login/')
@@ -379,10 +409,10 @@ def amz_pnl_view(request):
 
     print(f"the start date in the pnl table is {start_date} and the end date is {end_date}")
     
-    print(f"all seller or only seller case is triggered!!!")
+    # print(f"all seller or only seller case is triggered!!!")
     pnl_details = Amazon_PnL_calculator(start_date, end_date, time_format, seller, brand)
 
-    print(f"Fetching of the data is complete......")
+    print(f"Fetching of the PnL data is complete......")
 
     return JsonResponse(pnl_details)
 

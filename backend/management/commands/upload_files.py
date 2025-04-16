@@ -69,9 +69,9 @@ class Command(BaseCommand):
         # load_First_step_Master_SKU(file_path_1st_step_master_sku, First_step_Master_SKU)
         # self.stdout.write(self.style.SUCCESS('Master SKU of 1st Step is uploaded successfully!'))
         
-        # uploading the Sales data to the Sales database of First Step FK
-        First_Step_sales_folder_path = r"C:\Users\Satyam\Documents\Excel files\1st step\sales"
-        upload_files_to_database(First_Step_sales_folder_path, UploadedFileTracker, load_sales_FK, First_step_SalesData_FK)
+        # # uploading the Sales data to the Sales database of First Step FK
+        # First_Step_sales_folder_path = r"C:\Users\Satyam\Documents\Excel files\1st step\sales"
+        # upload_files_to_database(First_Step_sales_folder_path, UploadedFileTracker, load_sales_FK, First_step_SalesData_FK)
         
         # # uploading the Ads data to the Ads database of First Step FK
         # First_Step_ads_folder_path = r"C:\Users\Satyam\Documents\Excel files\1st step\ads"
