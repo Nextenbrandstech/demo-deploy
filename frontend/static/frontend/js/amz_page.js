@@ -7,8 +7,8 @@ let dynamicPlots = {}; // Store all plots globally
 
 
 document.addEventListener("DOMContentLoaded", function () {
-  const defaultStartDate = "2024-12-01";
-  const defaultEndDate = "2024-12-03";
+  const defaultStartDate = "2025-01-01";
+  const defaultEndDate = "2025-01-03";
 
   document.getElementById("start-date").value = defaultStartDate;
   document.getElementById("end-date").value = defaultEndDate;

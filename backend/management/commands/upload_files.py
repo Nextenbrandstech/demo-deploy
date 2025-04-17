@@ -92,7 +92,7 @@ class Command(BaseCommand):
         # First_step_SalesData_FK.objects.all().delete()
         # First_step_FK_Return_data.objects.all().delete()
 
-        # # # For Amazon's Platform
+        # # For Amazon's Platform
         # First_step_sales_AMZ_folder_path = r"C:\Users\Satyam\Documents\Excel files\1st step\amazon\sales"
         # upload_files_to_database(First_step_sales_AMZ_folder_path, UploadedFileTracker, load_sales_Amazon, First_step_SalesData_AMZ)
 
